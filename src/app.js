@@ -4,9 +4,15 @@ const express = require('express');
 const app = express();
 
 // Handle the incoming request
-app.use((req, res) => {
+app.get("/user", (req, res) => {
+    res.send({firstname: "John", lastname: "Doe"});
+});
+app.post("/user", (req, res) => {
+    res.send('This is a POST call.');
+});
+app.use("/", (req, res) => {
     res.send('Hello, World! This is my first Express.js application.');
-})
+});
 
 // Start the server on port 3000
 app.listen(3000, () => {
