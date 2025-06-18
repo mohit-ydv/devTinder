@@ -1,12 +1,24 @@
 const express = require('express');
+const { adminAuth, userAuth } = require('./middlewares/auth');
 
 // Create an instance of this express application (new web server)
 const app = express();
 
+app.use("/admin", adminAuth);
+
+app.get("/admin", (req, res) => {
+    res.send("Hello, Admin!");
+});
+
+app.get("/admin/getAllUsers", (req, res) => {
+    res.send("List of all users");
+});
+
 // Handle the incoming request
-app.get("/user", (req, res) => {
+app.get("/user", userAuth, (req, res) => {
     res.send({ firstname: "John", lastname: "Doe" });
 });
+
 app.post("/user", (req, res) => {
     res.send('This is a POST call.');
 });
