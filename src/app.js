@@ -2,6 +2,7 @@ const express = require('express');
 const connectDB = require('./config/database');
 const app = express();
 const User = require('./models/user');
+const user = require('./models/user');
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
@@ -17,6 +18,54 @@ app.post('/signup', async (req, res) => {
             res.status(500).json({ message: 'Error creating user', error: err.message });
         });
 });
+
+app.get('/user', async (req, res) => {
+    const emailId = req.body.emailId;
+    try {
+        const users = await User.find({ emailId: emailId });
+        if (users.length === 0) {
+            res.status(404).json({ message: 'No user found with the provided emailId' });
+        } else {
+            res.send(users);
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
+    }
+});
+
+app.get('/feed', async (req, res) => {
+    try {
+        const users = await User.find({});
+        res.send(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
+    }
+});
+
+// delete user
+app.delete('/user', async (req, res) => {
+    const userId = req.body.userId;
+    try {
+        const user = await User.findByIdAndDelete(userId);
+        res.send("User deleted successfully");
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
+    }
+});
+
+// update user
+app.patch('/user', async (req, res) => {
+    const userId = req.body.userId;
+    const data = req.body;
+    try {
+        const user = await User.findByIdAndUpdate({_id: userId}, data);
+        res.send("User updated successfully");
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
+    }
+});
+
+
 
 // Connect to the database
 connectDB().then(() => {
