@@ -5,16 +5,21 @@ const app = express();
 
 // Handle the incoming request
 app.get("/user", (req, res) => {
-    res.send({firstname: "John", lastname: "Doe"});
+    res.send({ firstname: "John", lastname: "Doe" });
 });
 app.post("/user", (req, res) => {
     res.send('This is a POST call.');
 });
-app.use("/", (req, res) => {
-    res.send('Hello, World! This is my first Express.js application.');
+
+app.use("/users", (req, res, next) => {
+    console.log('Response 1');
+    next();
+}, (req, res) => {
+    console.log('Response 2');
+    res.send('Hello, user! From 2nd handler');
 });
 
 // Start the server on port 3000
 app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+    console.log('Server is running on http://localhost:3000');
 });
