@@ -1,37 +1,33 @@
 const express = require('express');
-const { adminAuth, userAuth } = require('./middlewares/auth');
-
-// Create an instance of this express application (new web server)
+const connectDB = require('./config/database');
 const app = express();
+const User = require('./models/user');
 
-app.use("/admin", adminAuth);
+app.post('/signup', async (req, res) => {
+    // Creating an instance of the User model
+    const newUser = new User({
+        firstName: 'Mohit',
+        lastName: 'Yadav',
+        emailId: 'abc@gmail.com',
+        password: '123456',
+    });
 
-app.get("/admin", (req, res) => {
-    res.send("Hello, Admin!");
-});
+    await newUser.save()
+        .then(() => {
+            res.status(201).json({ message: 'User created successfully' });
+        })
+        .catch(err => {
+            res.status(500).json({ message: 'Error creating user', error: err.message });
+        });
+})
 
-app.get("/admin/getAllUsers", (req, res) => {
-    res.send("List of all users");
-});
-
-// Handle the incoming request
-app.get("/user", userAuth, (req, res) => {
-    res.send({ firstname: "John", lastname: "Doe" });
-});
-
-app.post("/user", (req, res) => {
-    res.send('This is a POST call.');
-});
-
-app.use("/users", (req, res, next) => {
-    console.log('Response 1');
-    next();
-}, (req, res) => {
-    console.log('Response 2');
-    res.send('Hello, user! From 2nd handler');
-});
-
-// Start the server on port 3000
-app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+// Connect to the database
+connectDB().then(() => {
+    console.log("Connected to MongoDB successfully");
+    // Start the server on port 3000
+    app.listen(3000, () => {
+        console.log('Server is running on http://localhost:3000');
+    });
+}).catch(err => {
+    console.log("Error connecting to MongoDB:", err.message);
 });
