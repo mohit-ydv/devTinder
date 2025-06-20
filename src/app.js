@@ -3,20 +3,29 @@ const connectDB = require('./config/database');
 const app = express();
 const User = require('./models/user');
 const user = require('./models/user');
+const { validateSignupData } = require('./utils/validation');
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
 app.post('/signup', async (req, res) => {
-    // Creating an instance of the User model
-    const newUser = new User(req.body);
+    try {
+        // Validate the request body
+        validateSignupData(req.body);
 
-    await newUser.save()
-        .then(() => {
-            res.status(201).json({ message: 'User created successfully' });
-        })
-        .catch(err => {
-            res.status(500).json({ message: 'Error creating user', error: err.message });
-        });
+        // Creating an instance of the User model
+        const newUser = new User(req.body);
+
+        await newUser.save()
+            .then(() => {
+                res.status(201).json({ message: 'User created successfully' });
+            })
+            .catch(err => {
+                res.status(500).json({ message: 'Error creating user', error: err.message });
+            });
+    } catch (error) {
+        // This catches validation errors and prevents server crash
+        res.status(400).json({ message: error.message });
+    }
 });
 
 app.get('/user', async (req, res) => {
@@ -75,7 +84,11 @@ app.patch('/user/:userId', async (req, res) => {
     }
 });
 
-
+// Global error handler to catch any unhandled errors
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ message: 'Something went wrong!', error: err.message });
+});
 
 // Connect to the database
 connectDB().then(() => {
