@@ -2,18 +2,27 @@ const express = require('express');
 const connectDB = require('./config/database');
 const app = express();
 const User = require('./models/user');
-const user = require('./models/user');
+const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 const { validateSignupData } = require('./utils/validation');
 
 app.use(express.json()); // Middleware to parse JSON bodies
+app.use(cookieParser()); // Middleware to parse cookies
 
 app.post('/signup', async (req, res) => {
     try {
         // Validate the request body
         validateSignupData(req.body);
 
+        const { firstName, lastName, emailId, password } = req.body;
+        // Hash the password before saving it to the database
+        const passwordHash = await bcrypt.hash(password, 10);
+
         // Creating an instance of the User model
-        const newUser = new User(req.body);
+        const newUser = new User({
+            firstName, lastName, emailId, password: passwordHash,
+        });
 
         await newUser.save()
             .then(() => {
@@ -27,6 +36,35 @@ app.post('/signup', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
+app.post("/login", async (req, res) => {
+    try {
+        const { emailId, password } = req.body;
+        const user = await User.findOne({ emailId: emailId });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        // Compare the provided password with the hashed password in the database
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
+        // create a JWT token
+        const token = await jwt.sign({ _id: user._id }, "DEV@Tinder@25");
+        console.log("Token: ", token);
+
+
+        res.cookie('tokenA', token)
+        // If the password is valid, return a success message or user data
+        res.status(200).json({ message: 'Login successful' });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error logging in', error: error.message });
+    }
+});
+
+
 
 app.get('/user', async (req, res) => {
     const emailId = req.body.emailId;
@@ -44,6 +82,18 @@ app.get('/user', async (req, res) => {
 
 app.get('/feed', async (req, res) => {
     try {
+        const cookies = req.cookies;
+        const { token } = cookies;
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized access' });
+        }
+
+        // validate the token
+        const decoded = jwt.verify(token, "DEV@Tinder@25");
+        const decodedUserId = decoded._id;
+        console.log("Decoded User ID: ", decodedUserId);
+
+
         const users = await User.find({});
         res.send(users);
     } catch (error) {
