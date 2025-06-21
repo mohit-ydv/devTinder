@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const { validateSignupData } = require('./utils/validation');
+const { userAuth } = require('./middlewares/auth');
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(cookieParser()); // Middleware to parse cookies
@@ -44,6 +45,7 @@ app.post("/login", async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
         // Compare the provided password with the hashed password in the database
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
@@ -51,11 +53,13 @@ app.post("/login", async (req, res) => {
         }
 
         // create a JWT token
-        const token = await jwt.sign({ _id: user._id }, "DEV@Tinder@25");
-        console.log("Token: ", token);
+        const token = await jwt.sign({ _id: user._id }, "DEV@Tinder@25", {
+            expiresIn: '1h'
+        });
 
+        // Set the token in a cookie
+        res.cookie('token', token, { expires: new Date(Date.now() + 3600000), httpOnly: true });
 
-        res.cookie('tokenA', token)
         // If the password is valid, return a success message or user data
         res.status(200).json({ message: 'Login successful' });
 
@@ -64,7 +68,15 @@ app.post("/login", async (req, res) => {
     }
 });
 
-
+app.get('/profile', userAuth, async (req, res) => {
+    try {
+        // Get the user from the request object
+        const user = req.user;
+        res.send(user)
+    } catch (err) {
+        res.status(400).send("Error fetching profile: " + err.message);
+    }
+})
 
 app.get('/user', async (req, res) => {
     const emailId = req.body.emailId;
@@ -82,6 +94,7 @@ app.get('/user', async (req, res) => {
 
 app.get('/feed', async (req, res) => {
     try {
+        // Check if the token is present in cookies
         const cookies = req.cookies;
         const { token } = cookies;
         if (!token) {
@@ -92,7 +105,6 @@ app.get('/feed', async (req, res) => {
         const decoded = jwt.verify(token, "DEV@Tinder@25");
         const decodedUserId = decoded._id;
         console.log("Decoded User ID: ", decodedUserId);
-
 
         const users = await User.find({});
         res.send(users);
