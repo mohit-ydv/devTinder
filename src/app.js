@@ -46,21 +46,13 @@ app.post("/login", async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Compare the provided password with the hashed password in the database
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.validatePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' });
         }
 
-        // create a JWT token
-        const token = await jwt.sign({ _id: user._id }, "DEV@Tinder@25", {
-            expiresIn: '1h'
-        });
-
-        // Set the token in a cookie
-        res.cookie('token', token, { expires: new Date(Date.now() + 3600000), httpOnly: true });
-
-        // If the password is valid, return a success message or user data
+        const token = await user.getJWT(user);
+        res.cookie('token', token, { expires: new Date(Date.now() + 3600000)});
         res.status(200).json({ message: 'Login successful' });
 
     } catch (error) {
