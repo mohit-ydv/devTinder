@@ -1,6 +1,7 @@
 const express = require('express');
 const { userAuth } = require('../middlewares/auth');
 const ConnectionRequest = require('../models/connectionRequest');
+const User = require('../models/user');
 
 const userRouter = express.Router();
 
@@ -56,5 +57,36 @@ userRouter.get('/user/connections', userAuth, async (req, res) => {
         res.status(500).json({ message: 'Error fetching connections', error: error.message });
     }
 });
+
+// Get the feed for the logged-in user
+userRouter.get('/feed', userAuth, async (req, res) => {
+    try {
+        const loggedinUser = req.user;
+
+        // find all the connection requests (sent + received)
+        const connectionRequests = await ConnectionRequest.find({
+            $or: [
+                { fromUserId: loggedinUser._id },
+                { toUserId: loggedinUser._id }
+            ]
+        }).select('fromUserId toUserId');
+
+        const hideUsersFromFeed = new Set();
+        connectionRequests.forEach((req) => {
+            hideUsersFromFeed.add(req.fromUserId.toString());
+            hideUsersFromFeed.add(req.toUserId.toString());
+        });
+
+        const users = await User.find({
+            $and: [
+                { _id: { $ne: loggedinUser._id } }, // Exclude the logged-in user
+                { _id: { $nin: Array.from(hideUsersFromFeed) } } // Exclude users in connection requests
+            ]
+        }).select('firstName lastName age about photoUrl skills');
+        res.send(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching feed', error: error.message });
+    }
+})
 
 module.exports = userRouter;
