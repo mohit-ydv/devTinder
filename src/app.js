@@ -9,7 +9,12 @@ const authRouter = require('./routes/auth');
 const profileRouter = require('./routes/profile');
 const requestRouter = require('./routes/request');
 const userRouter = require('./routes/user');
+const cors = require('cors');
 
+app.use(cors({
+    origin: 'http://localhost:5173', // Allow requests from this origin (whitelist)
+    credentials: true, // Allow cookies to be sent with requests
+}));
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(cookieParser()); // Middleware to parse cookies
 
