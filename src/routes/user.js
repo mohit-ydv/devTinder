@@ -11,10 +11,14 @@ userRouter.get('/user/requests/received', userAuth, async (req, res) => {
         const loggedinUser = req.user;
         const requests = await ConnectionRequest.find({ toUserId: loggedinUser._id, status: 'interested' }).populate('fromUserId', [
             'firstName',
-            'lastName'
+            'lastName',
+            'age',
+            'about',
+            'photoUrl',
+            "gender"
         ]);
         if (!requests || requests.length === 0) {
-            return res.status(404).json({ message: 'No connection requests found' });
+            return res.json([]);
         }
         res.status(200).json(requests);
     } catch (error) {
@@ -35,12 +39,14 @@ userRouter.get('/user/connections', userAuth, async (req, res) => {
             'firstName',
             'lastName',
             'age',
-            'about'
+            'about',
+            'photoUrl'
         ]).populate('toUserId', [
             'firstName',
             'lastName',
             'age',
-            'about'
+            'about',
+            'photoUrl'
         ]);
         const data = allConnections.map((connection) => {
             if (connection.fromUserId._id.toString() === loggedinUser._id.toString()) {
@@ -50,7 +56,7 @@ userRouter.get('/user/connections', userAuth, async (req, res) => {
         });
 
         if (!allConnections || allConnections.length === 0) {
-            return res.status(404).json({ message: 'No connection found' });
+            return res.json([]);
         }
         res.status(200).json(data);
     } catch (error) {

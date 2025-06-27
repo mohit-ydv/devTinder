@@ -19,13 +19,14 @@ authRouter.post('/signup', async (req, res) => {
             firstName, lastName, emailId, password: passwordHash,
         });
 
-        await newUser.save()
-            .then(() => {
-                res.status(201).json({ message: 'User created successfully' });
-            })
-            .catch(err => {
-                res.status(500).json({ message: 'Error creating user', error: err.message });
-            });
+        const savedUser = await newUser.save();
+        const token = await savedUser.getJWT();
+        res.cookie('token', token, { expires: new Date(Date.now() + 3600000) });
+
+        res.status(200).json({
+            message: 'User Added Successfully!',
+            data: savedUser
+        });
     } catch (error) {
         // This catches validation errors and prevents server crash
         res.status(400).json({ message: error.message });
@@ -45,9 +46,9 @@ authRouter.post("/login", async (req, res) => {
             return res.status(401).json({ message: 'Invalid password' });
         }
 
-        const token = await user.getJWT(user);
+        const token = await user.getJWT();
         res.cookie('token', token, { expires: new Date(Date.now() + 3600000) });
-        res.status(200).json({ message: 'Login successful' });
+        res.status(200).json(user);
 
     } catch (error) {
         res.status(500).json({ message: 'Error logging in', error: error.message });
