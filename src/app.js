@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const connectDB = require('./config/database');
 const app = express();
 const User = require('./models/user');
@@ -27,7 +28,7 @@ app.use('/', userRouter);
 connectDB().then(() => {
     console.log("Connected to MongoDB successfully");
     // Start the server on port 3000
-    app.listen(3000, () => {
+    app.listen(process.env.PORT, () => {
         console.log('Server is running on http://localhost:3000');
     });
 }).catch(err => {

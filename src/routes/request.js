@@ -2,6 +2,7 @@ const express = require('express');
 const { userAuth } = require('../middlewares/auth');
 const ConnectionRequest = require('../models/connectionRequest');
 const User = require('../models/user');
+const sendEmail = require('../utils/sendEmail');
 
 const requestRouter = express.Router();
 
@@ -47,6 +48,11 @@ requestRouter.post('/request/send/:status/:userid', userAuth, async (req, res) =
             status
         });
         const data = await connectionRequest.save();
+
+        const emailResponse = await sendEmail.run("A new friend request is sent from " + req.user.firstName,
+            req.user.firstName + " is " + status + " in " + toUser.firstName
+        );
+
         res.json({
             message: "Connection request sent successfully",
             data
@@ -76,7 +82,7 @@ requestRouter.post('/request/review/:status/:requestid', userAuth, async (req, r
             toUserId: loggedInUser._id,
             status: 'interested'
         });
-        
+
         if (!connectionRequest) {
             return res.status(404).json({
                 message: "Connection request not found or already reviewed."
